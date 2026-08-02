@@ -20,6 +20,8 @@ module.exports = [
                 process: "readonly",
                 Buffer: "readonly",
                 __dirname: "readonly",
+                // Global since Node 18; used by scripts/check-audio.js
+                fetch: "readonly",
             },
         },
         rules: {
