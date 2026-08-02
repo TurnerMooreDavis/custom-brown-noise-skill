@@ -88,16 +88,22 @@ the **deployed** code, not your working tree, and it will not actually play audi
 **Your phone, running local code:**
 
 ```bash
-ask run --profile default          # from a skill project directory
+./scripts/debug.sh lilt
 ```
 
-`ask run` re-routes development requests from the Alexa service to a local instance
-of the skill, so you can say "Alexa, open custom brown noise" on your phone and have
-it execute the code in your working tree - no deploy. This is the only way to hear
-the audio actually stream while still iterating locally.
+This starts an ASK local debug session. While it runs, requests to the skill's
+**development** stage are re-routed from the Alexa service to the code in your
+working tree, so you can say "Alexa, open custom brown noise" into the Alexa app on
+your phone and have it execute what you just edited - no deploy. It is the only way
+to hear the audio actually stream while still iterating locally.
 
-Note that `ask run` expects a skill project layout (`ask-resources.json` plus
-`lambda/`), which is what `scripts/deploy.sh` assembles under `.deploy/<key>/`.
+Nothing is written to the skill's repo and the routing reverts as soon as you press
+Ctrl-C. The script assembles a throwaway project under `.deploy/<key>/` and installs
+`ask-sdk-local-debug` there only, so the debug dependency never reaches
+`lambda/package.json` and never gets deployed.
+
+Sign the Alexa app into the same developer account that owns the skill, otherwise it
+will not see the development stage.
 
 ## Deploying
 
