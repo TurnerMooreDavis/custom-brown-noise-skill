@@ -1,0 +1,31 @@
+{
+    "name": "custom-brown-noise-skill",
+    "version": "1.0.0",
+    "description": "Alexa custom skill that streams looping brown noise from S3",
+    "main": "index.js",
+    "private": true,
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "check-all": "npm run lint && npm run format:check && npm test"
+    },
+    "dependencies": {
+        "ask-sdk-core": "^2.14.0",
+        "ask-sdk-model": "^1.86.0"
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.8.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-jest": "^29.16.0",
+        "jest": "^30.4.2",
+        "prettier": "^3.9.6"
+    }
+}

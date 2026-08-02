@@ -1,0 +1,22 @@
+node_modules/
+coverage/
+*.log
+.DS_Store
+
+# ASK CLI credentials and local state
+.ask/
+ask-states.json
+cli_config
+
+# Deploy working clones created by scripts/deploy.sh
+.deploy/
+
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+credentials
+aws_credentials
+.aws/

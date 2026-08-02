@@ -1,0 +1,11 @@
+{
+    "name": "custom-brown-noise-skill-lambda",
+    "version": "2.0.0",
+    "description": "Shared Alexa AudioPlayer logic for the brown noise skills",
+    "main": "index.js",
+    "license": "Apache-2.0",
+    "dependencies": {
+        "ask-sdk-core": "^2.14.0",
+        "ask-sdk-model": "^1.86.0"
+    }
+}

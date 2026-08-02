@@ -1,24 +1,16 @@
 /* *
  * Custom Brown Noise Skill Logic - Plays MP3 from S3 on Launch or Intent
  * Uses CommonJS (require/exports) syntax for compatibility with Alexa-Hosted Lambda.
- * Final Stable Version with Looping, Full Control, and Welcome Audio.
+ *
+ * Shared by all three brown noise skills. Everything that differs between them
+ * (audio track, spoken name, token prefix) comes from lambda/skills.js, keyed
+ * by the applicationId on the incoming request.
  * */
 const Alexa = require("ask-sdk-core");
+const { getSkillConfig } = require("./skills");
 
 // =========================================================================================
-// 0. PRODUCTION URLS
-// =========================================================================================
-const AUDIO_URL =
-    "https://lil-t-brown-noise.s3.us-east-1.amazonaws.com/brown-noise-hour-3.mp3";
-const WELCOME_AUDIO_URL =
-    "https://lil-t-brown-noise.s3.us-east-1.amazonaws.com/brown-noise-hour-intro-3.mp3";
-
-const AUDIO_TOKEN = "s3AudioFileToken";
-const WELCOME_TOKEN = "s3WelcomeToken"; // New token for the welcome clip
-const SKILL_NAME = "custom brown noise";
-
-// =========================================================================================
-// 1. COMBINED PLAY HANDLER (Includes SSML Welcome Audio)
+// 1. PLAY HANDLER
 // =========================================================================================
 const PlayBrownNoiseIntentHandler = {
     canHandle(handlerInput) {
@@ -32,30 +24,13 @@ const PlayBrownNoiseIntentHandler = {
         return isLaunch || isPlayIntent;
     },
     handle(handlerInput) {
-        console.log(
-            `~~~~ PlayBrownNoiseHandler: Starting Welcome clip and enqueuing main track in single directive.`,
+        const { audioUrl, audioToken, key } = getSkillConfig(
+            handlerInput.requestEnvelope,
         );
+        console.log(`~~~~ PlayBrownNoiseHandler: Starting track for "${key}".`);
 
-        // --- STEP 1: Define the ENQUEUED main track ---
-        const mainTrackItem = {
-            stream: {
-                token: AUDIO_TOKEN, // Main track token
-                url: AUDIO_URL, // Main track URL
-                offsetInMilliseconds: 0,
-            },
-        };
-
-        // --- STEP 2: Issue ONE Play Directive with the welcome track playing and the main track enqueued ---
-        // Play the welcome clip (REPLACE_ALL) and queue the main track behind it.
         return handlerInput.responseBuilder
-            .addAudioPlayerPlayDirective(
-                "REPLACE_ALL",
-                WELCOME_AUDIO_URL,
-                `${AUDIO_TOKEN}-Welcome`,
-                0,
-                null,
-                mainTrackItem,
-            )
+            .addAudioPlayerPlayDirective("REPLACE_ALL", audioUrl, audioToken, 0)
             .withShouldEndSession(true)
             .getResponse();
     },
@@ -131,18 +106,16 @@ const ResumeIntentHandler = {
         return isIntent || isPlaybackCommand || isSkipCommand;
     },
     handle(handlerInput) {
+        const { audioUrl, audioToken } = getSkillConfig(
+            handlerInput.requestEnvelope,
+        );
         console.log(
             "~~~~ ResumeIntentHandler: Issuing AudioPlayer.Play directive.",
         );
 
         // Resume playback logic - OFFSET is 0 to restart the full loop
         return handlerInput.responseBuilder
-            .addAudioPlayerPlayDirective(
-                "REPLACE_ALL",
-                AUDIO_URL,
-                AUDIO_TOKEN,
-                0,
-            )
+            .addAudioPlayerPlayDirective("REPLACE_ALL", audioUrl, audioToken, 0)
             .withShouldEndSession(true)
             .getResponse();
     },
@@ -159,22 +132,40 @@ const PlaybackNearlyFinishedHandler = {
         );
     },
     handle(handlerInput) {
-        console.log("~~~~ PlaybackNearlyFinishedHandler: Looping track now.");
-
-        const newAudioToken = `${AUDIO_TOKEN}-${Date.now()}`;
-
-        return (
-            handlerInput.responseBuilder
-                // ENQUEUE: Adds the new track to the queue, starting from 0 offset.
-                .addAudioPlayerPlayDirective(
-                    "ENQUEUE",
-                    AUDIO_URL,
-                    newAudioToken,
-                    0,
-                    AUDIO_TOKEN,
-                )
-                .getResponse()
+        const { audioUrl, audioToken } = getSkillConfig(
+            handlerInput.requestEnvelope,
         );
+
+        // expectedPreviousToken MUST be the token of the stream that is playing
+        // right now, not a fixed constant. Alexa silently drops an ENQUEUE whose
+        // expectedPreviousToken does not match the current token, which stops
+        // playback at the end of the current track.
+        const lastToken = handlerInput.requestEnvelope.request?.token;
+
+        // Guard clause: If the token is missing for any reason, log it and exit gracefully.
+        // This prevents sending a malformed directive that would stop playback entirely.
+        if (!lastToken) {
+            console.warn(
+                "!!!! PlaybackNearlyFinishedHandler: No token found in request. Looping aborted to prevent crash.",
+            );
+            return handlerInput.responseBuilder.getResponse();
+        }
+
+        const newAudioToken = `${audioToken}-${Date.now()}`;
+
+        console.log(
+            `~~~~ PlaybackNearlyFinishedHandler: Enqueuing next track. Previous: ${lastToken}, New: ${newAudioToken}`,
+        );
+
+        return handlerInput.responseBuilder
+            .addAudioPlayerPlayDirective(
+                "ENQUEUE",
+                audioUrl,
+                newAudioToken,
+                0,
+                lastToken, // Required for queue continuity
+            )
+            .getResponse();
     },
 };
 
@@ -246,7 +237,8 @@ const HelpIntentHandler = {
         );
     },
     handle(handlerInput) {
-        const speakOutput = `I can play the ${SKILL_NAME} for you. Just say 'play brown noise'.`;
+        const { spokenName } = getSkillConfig(handlerInput.requestEnvelope);
+        const speakOutput = `I can play the ${spokenName} for you. Just say 'play brown noise'.`;
         console.log("~~~~ HelpIntentHandler: Providing help output.");
 
         return handlerInput.responseBuilder
@@ -360,5 +352,5 @@ exports.handler = Alexa.SkillBuilders.custom()
     )
     .addRequestInterceptors(LoggingRequestInterceptor)
     .addErrorHandlers(ErrorHandler)
-    .withCustomUserAgent("custom-brown-noise/v1")
+    .withCustomUserAgent("custom-brown-noise/v2")
     .lambda();
