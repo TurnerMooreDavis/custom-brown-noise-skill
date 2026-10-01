@@ -13,7 +13,7 @@
 const SKILLS = {
     "amzn1.ask.skill.8b1db85a-e7db-483a-9e43-9164c6a0345c": {
         key: "notag",
-        spokenName: "basic brown noise",
+        spokenName: "short brown noise",
         audioUrl:
             "https://lil-t-brown-noise.s3.us-east-1.amazonaws.com/brown-noise-hour-3.mp3",
         audioToken: "s3AudioFileTokenBasic",
