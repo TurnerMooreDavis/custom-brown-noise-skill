@@ -7,7 +7,7 @@ on the incoming request.
 
 | Key     | Skill             | Invocation name      | Audio                    |
 | ------- | ----------------- | -------------------- | ------------------------ |
-| `notag` | notag brown noise | "short brown noise"  | 1 hour, no intro         |
+| `notag` | notag brown noise | "pickle watermelon"  | 1 hour, no intro         |
 | `lilt`  | lil t brown noise | "custom brown noise" | 12 hours, intro baked in |
 | `caleb` | caleb brown noise | "caleb brown noise"  | 12 hours, intro baked in |
 
