@@ -5,11 +5,11 @@ differ only by audio track, spoken name and token prefix, so the code is identic
 across all three and selects its configuration at runtime from the `applicationId`
 on the incoming request.
 
-| Key     | Skill             | Invocation name      | Audio                    |
-| ------- | ----------------- | -------------------- | ------------------------ |
-| `notag` | notag brown noise | "pickle watermelon"  | 1 hour, no intro         |
-| `lilt`  | lil t brown noise | "custom brown noise" | 12 hours, intro baked in |
-| `caleb` | caleb brown noise | "caleb brown noise"  | 12 hours, intro baked in |
+| Key     | Skill             | Invocation name     | Audio                    |
+| ------- | ----------------- | ------------------- | ------------------------ |
+| `notag` | notag brown noise | "pickle watermelon" | 1 hour, no intro         |
+| `lilt`  | lil t brown noise | "blueberry stew"    | 12 hours, intro baked in |
+| `caleb` | caleb brown noise | "caleb brown noise" | 12 hours, intro baked in |
 
 The intros are part of the MP3 files themselves, not separate audio directives.
 
@@ -93,7 +93,7 @@ the **deployed** code, not your working tree, and it will not actually play audi
 
 This starts an ASK local debug session. While it runs, requests to the skill's
 **development** stage are re-routed from the Alexa service to the code in your
-working tree, so you can say "Alexa, open custom brown noise" into the Alexa app on
+working tree, so you can say "Alexa, open blueberry stew" into the Alexa app on
 your phone and have it execute what you just edited - no deploy. It is the only way
 to hear the audio actually stream while still iterating locally.
 

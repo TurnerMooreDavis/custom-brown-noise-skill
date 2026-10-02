@@ -20,7 +20,7 @@ const SKILLS = {
     },
     "amzn1.ask.skill.3933e191-2148-4b18-abe2-b6bb2cb2f554": {
         key: "lilt",
-        spokenName: "custom brown noise",
+        spokenName: "blueberry stew",
         audioUrl:
             "https://lil-t-brown-noise.s3.us-east-1.amazonaws.com/brown-noise-twelve-hour.mp3",
         audioToken: "s3AudioFileToken",
