@@ -193,3 +193,75 @@ describe("standard intents", () => {
         expect(directives(response)).toHaveLength(0);
     });
 });
+
+describe("diagnostic logging", () => {
+    const { handler } = require("../lambda/index.js");
+    const { buildEnvelope } = require("./helpers");
+
+    function invokeEnvelope(envelope) {
+        return new Promise((resolve, reject) => {
+            handler(envelope, {}, (err, response) =>
+                err ? reject(err) : resolve(response),
+            );
+        });
+    }
+
+    function logged() {
+        return [...console.log.mock.calls, ...console.error.mock.calls]
+            .map((args) => args.join(" "))
+            .join("\n");
+    }
+
+    beforeEach(() => {
+        console.log.mockClear();
+        console.error.mockClear();
+    });
+
+    it("logs which device sent the request and its player state", async () => {
+        const envelope = buildEnvelope(
+            intentRequest("AMAZON.StopIntent"),
+            SKILL_IDS[0],
+        );
+        envelope.context.System.device.deviceId =
+            "amzn1.ask.device.AAAAAAAAAAAAkitchen12345";
+        envelope.context.AudioPlayer = {
+            playerActivity: "IDLE",
+            token: "s3AudioFileToken-1",
+            offsetInMilliseconds: 0,
+        };
+
+        await invokeEnvelope(envelope);
+
+        expect(logged()).toContain("Device: ...kitchen12345");
+        expect(logged()).toContain(
+            "Player: IDLE token=s3AudioFileToken-1 offset=0ms",
+        );
+    });
+
+    it("says so when the request has no AudioPlayer context", async () => {
+        await invoke(launchRequest());
+
+        expect(logged()).toContain("Player: no AudioPlayer context");
+    });
+
+    it("logs the error and playback state on PlaybackFailed", async () => {
+        await invoke({
+            ...audioPlayerRequest("AudioPlayer.PlaybackFailed", "tok-1"),
+            error: {
+                type: "MEDIA_ERROR_SERVICE_UNAVAILABLE",
+                message: "stream dropped",
+            },
+            currentPlaybackState: {
+                token: "tok-1",
+                offsetInMilliseconds: 3600000,
+                playerActivity: "PLAYING",
+            },
+        });
+
+        expect(logged()).toContain("Request Token: tok-1 offset=0ms");
+        expect(logged()).toContain(
+            "PlaybackFailed caught. Type: MEDIA_ERROR_SERVICE_UNAVAILABLE - Message: stream dropped - Failed token: tok-1",
+        );
+        expect(logged()).toContain('"offsetInMilliseconds":3600000');
+    });
+});

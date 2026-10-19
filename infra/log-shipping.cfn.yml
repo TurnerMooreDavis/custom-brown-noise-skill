@@ -1,0 +1,110 @@
+# Copies the brown noise skills' logs into your own AWS account.
+#
+# Alexa-hosted skills log to CloudWatch in an AWS account Amazon owns, which
+# nothing outside the developer console can read. This stack gives the hosted
+# Lambdas somewhere of yours to write, and a read-only user to read it with.
+#
+# Deploy in us-east-1. Each parameter is the ARN shown under the
+# "Link your personal AWS resources" icon in that skill's Code tab.
+#
+# Requires the BrownNoiseLogsBoundary managed policy to exist first (its
+# JSON is infra/iam/boundary-policy.json). Both IAM principals carry it as a
+# permissions boundary, so whatever their own policies say, neither can do
+# more than read and write this one log group.
+#
+# After the stack is created, open the ReaderUser in the IAM console and
+# create an access key there. The template deliberately does not create the
+# key, because a secret in stack outputs is readable by anyone who can view
+# the stack.
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Log shipping for the brown noise Alexa-hosted skills
+
+Parameters:
+    NotagLambdaRoleArn:
+        Type: String
+        Description: Execution role ARN for notag ("pickle watermelon")
+        AllowedPattern: "arn:aws:iam::\\d{12}:role/.+"
+    LiltLambdaRoleArn:
+        Type: String
+        Description: Execution role ARN for lilt ("blueberry stew")
+        AllowedPattern: "arn:aws:iam::\\d{12}:role/.+"
+    CalebLambdaRoleArn:
+        Type: String
+        Description: Execution role ARN for caleb ("caleb brown noise")
+        AllowedPattern: "arn:aws:iam::\\d{12}:role/.+"
+
+Resources:
+    SkillLogGroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            LogGroupName: /brown-noise/skills
+            RetentionInDays: 90
+
+    # Assumed by the three hosted Lambdas. Can only write to the log group.
+    LogWriterRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: BrownNoiseLogWriter
+            PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/BrownNoiseLogsBoundary
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          AWS:
+                              - !Ref NotagLambdaRoleArn
+                              - !Ref LiltLambdaRoleArn
+                              - !Ref CalebLambdaRoleArn
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: write-skill-logs
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                                - logs:DescribeLogStreams
+                            Resource:
+                                - !GetAtt SkillLogGroup.Arn
+                                - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/brown-noise/skills
+
+    # For Claude's sandbox. Can only read the log group.
+    ReaderUser:
+        Type: AWS::IAM::User
+        Properties:
+            UserName: claude-brown-noise-logs
+            PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/BrownNoiseLogsBoundary
+            Policies:
+                - PolicyName: read-skill-logs
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:DescribeLogStreams
+                                - logs:GetLogEvents
+                                - logs:FilterLogEvents
+                                - logs:StartQuery
+                            Resource:
+                                - !GetAtt SkillLogGroup.Arn
+                                - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/brown-noise/skills
+                          # These actions do not support resource-level scoping.
+                          - Effect: Allow
+                            Action:
+                                - logs:DescribeLogGroups
+                                - logs:GetQueryResults
+                                - logs:StopQuery
+                                - logs:DescribeQueries
+                            Resource: "*"
+
+Outputs:
+    LogGroupName:
+        Value: !Ref SkillLogGroup
+    LogWriterRoleArn:
+        Description: The skills assume this role to write logs
+        Value: !GetAtt LogWriterRole.Arn
+    ReaderUserName:
+        Description: Create an access key for this user in the IAM console
+        Value: !Ref ReaderUser

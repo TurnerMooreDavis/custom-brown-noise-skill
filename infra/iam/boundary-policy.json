@@ -1,0 +1,32 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "SkillLogGroupOnly",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogStreams",
+                "logs:GetLogEvents",
+                "logs:FilterLogEvents",
+                "logs:StartQuery"
+            ],
+            "Resource": [
+                "arn:aws:logs:us-east-1:*:log-group:/brown-noise/skills",
+                "arn:aws:logs:us-east-1:*:log-group:/brown-noise/skills:*"
+            ]
+        },
+        {
+            "Sid": "ActionsWithoutResourceScoping",
+            "Effect": "Allow",
+            "Action": [
+                "logs:DescribeLogGroups",
+                "logs:GetQueryResults",
+                "logs:StopQuery",
+                "logs:DescribeQueries"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

@@ -1,0 +1,109 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ThisStackOnly",
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:CreateStack",
+                "cloudformation:UpdateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:DescribeStacks",
+                "cloudformation:DescribeStackEvents",
+                "cloudformation:DescribeStackResources",
+                "cloudformation:GetTemplate"
+            ],
+            "Resource": "arn:aws:cloudformation:us-east-1:*:stack/brown-noise-logs/*"
+        },
+        {
+            "Sid": "ValidateTemplate",
+            "Effect": "Allow",
+            "Action": "cloudformation:ValidateTemplate",
+            "Resource": "*"
+        },
+        {
+            "Sid": "ThisLogGroupOnly",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:DeleteLogGroup",
+                "logs:PutRetentionPolicy",
+                "logs:DeleteRetentionPolicy",
+                "logs:TagResource",
+                "logs:UntagResource",
+                "logs:ListTagsForResource",
+                "logs:TagLogGroup",
+                "logs:ListTagsLogGroup"
+            ],
+            "Resource": [
+                "arn:aws:logs:us-east-1:*:log-group:/brown-noise/skills",
+                "arn:aws:logs:us-east-1:*:log-group:/brown-noise/skills:*"
+            ]
+        },
+        {
+            "Sid": "DescribeLogGroups",
+            "Effect": "Allow",
+            "Action": "logs:DescribeLogGroups",
+            "Resource": "*"
+        },
+        {
+            "Sid": "GrantOnlyInsideTheBoundary",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:CreateUser",
+                "iam:PutRolePolicy",
+                "iam:PutUserPolicy",
+                "iam:PutRolePermissionsBoundary",
+                "iam:PutUserPermissionsBoundary"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/BrownNoiseLogWriter",
+                "arn:aws:iam::*:user/claude-brown-noise-logs"
+            ],
+            "Condition": {
+                "StringLike": {
+                    "iam:PermissionsBoundary": "arn:aws:iam::*:policy/BrownNoiseLogsBoundary"
+                }
+            }
+        },
+        {
+            "Sid": "ManageTheTwoPrincipals",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:GetRolePolicy",
+                "iam:ListRolePolicies",
+                "iam:ListAttachedRolePolicies",
+                "iam:DeleteRolePolicy",
+                "iam:DeleteRole",
+                "iam:UpdateAssumeRolePolicy",
+                "iam:TagRole",
+                "iam:UntagRole",
+                "iam:ListRoleTags",
+                "iam:GetUser",
+                "iam:GetUserPolicy",
+                "iam:ListUserPolicies",
+                "iam:ListAttachedUserPolicies",
+                "iam:DeleteUserPolicy",
+                "iam:DeleteUser",
+                "iam:TagUser",
+                "iam:UntagUser",
+                "iam:ListUserTags",
+                "iam:CreateAccessKey",
+                "iam:ListAccessKeys",
+                "iam:DeleteAccessKey"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/BrownNoiseLogWriter",
+                "arn:aws:iam::*:user/claude-brown-noise-logs"
+            ]
+        },
+        {
+            "Sid": "DeleteOwnKeyWhenDone",
+            "Effect": "Allow",
+            "Action": ["iam:ListAccessKeys", "iam:DeleteAccessKey"],
+            "Resource": "arn:aws:iam::*:user/claude-brown-noise-setup"
+        }
+    ]
+}

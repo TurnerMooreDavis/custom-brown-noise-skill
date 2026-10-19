@@ -200,6 +200,14 @@ const PassiveAudioPlayerHandler = {
             `~~~~ PassiveAudioPlayerHandler: Acknowledging final AudioPlayer event: ${requestType}`,
         );
 
+        if (requestType === "AudioPlayer.PlaybackFailed") {
+            const { error, currentPlaybackState } =
+                handlerInput.requestEnvelope.request;
+            console.error(
+                `!!!! AudioPlayer.PlaybackFailed caught. Type: ${error?.type} - Message: ${error?.message} - Failed token: ${handlerInput.requestEnvelope.request.token} - Current state: ${JSON.stringify(currentPlaybackState)}`,
+            );
+        }
+
         return handlerInput.responseBuilder.getResponse();
     },
 };
@@ -316,16 +324,48 @@ const ErrorHandler = {
 // 9. REQUEST INTERCEPTOR AND HANDLER EXPORT CHAIN
 // =========================================================================================
 
+function formatOffset(offsetInMilliseconds) {
+    return offsetInMilliseconds === undefined
+        ? "none"
+        : `${offsetInMilliseconds}ms`;
+}
+
+// Device IDs are long and identical up to the tail, so the last few characters
+// are enough to tell one Echo from another in CloudWatch.
+function shortDeviceId(requestEnvelope) {
+    const deviceId = requestEnvelope.context?.System?.device?.deviceId;
+    return deviceId ? `...${deviceId.slice(-12)}` : "unknown";
+}
+
+// The AudioPlayer context describes the player on the device that sent this
+// request, which is what tells a stop from the playing Echo apart from a stop
+// spoken to a different one.
+function describePlayer(requestEnvelope) {
+    const player = requestEnvelope.context?.AudioPlayer;
+    if (!player) {
+        return "no AudioPlayer context";
+    }
+    return `${player.playerActivity} token=${player.token ?? "none"} offset=${formatOffset(player.offsetInMilliseconds)}`;
+}
+
 const LoggingRequestInterceptor = {
     process(handlerInput) {
-        const requestType = Alexa.getRequestType(handlerInput.requestEnvelope);
+        const { requestEnvelope } = handlerInput;
+        const requestType = Alexa.getRequestType(requestEnvelope);
         const intentName =
             requestType === "IntentRequest"
-                ? Alexa.getIntentName(handlerInput.requestEnvelope)
+                ? Alexa.getIntentName(requestEnvelope)
                 : "N/A";
         console.log(`\n================= REQUEST RECEIVED =================`);
         console.log(`Request Type: ${requestType}`);
         console.log(`Intent Name: ${intentName}`);
+        console.log(`Device: ${shortDeviceId(requestEnvelope)}`);
+        console.log(`Player: ${describePlayer(requestEnvelope)}`);
+        if (requestEnvelope.request.token) {
+            console.log(
+                `Request Token: ${requestEnvelope.request.token} offset=${formatOffset(requestEnvelope.request.offsetInMilliseconds)}`,
+            );
+        }
         console.log(`====================================================\n`);
     },
 };
